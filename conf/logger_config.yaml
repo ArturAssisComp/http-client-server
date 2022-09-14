@@ -1,0 +1,53 @@
+version: 1
+formatters:
+        client:
+                format:  '[%(asctime)s] [%(levelname)8s] %(filename)s/%(funcName)s [%(hostname)s::%(ip)-15s]-->[%(dst_hostname)s:%(dst_port)d] - %(message)s'
+                datefmt: '%Y-%m-%d %H:%M:%S'
+        server:
+                format:  '[%(asctime)s] [%(levelname)8s] %(filename)s/%(funcName)s [%(hostname)s::%(ip)-15s]<--[%(dst_hostname)s:%(dst_port)d] - %(message)s'
+                datefmt: '%Y-%m-%d %H:%M:%S'
+        basic:
+                format:  '[%(asctime)s] [%(levelname)8s] %(filename)s/%(funcName)s - %(message)s'
+                datefmt: '%Y-%m-%d %H:%M:%S'
+        debug:
+                format: '***%(levelname)s*** [Filename: "%(filename)s"; Function:"%(funcName)s"; Line: %(lineno)d] --> %(message)s'
+
+
+
+handlers:
+        client_basic_handler:
+                class: logging.StreamHandler
+                level: INFO
+                formatter: client
+                stream: ext://sys.stdout
+        server_basic_handler:
+                class: logging.StreamHandler
+                level: INFO
+                formatter: server
+                stream: ext://sys.stdout
+        basic_handler:
+                class: logging.StreamHandler
+                level: INFO
+                formatter: basic
+                stream: ext://sys.stdout
+        debugger_handler:
+                class: logging.StreamHandler
+                level: DEBUG
+                formatter: debug 
+                stream: ext://sys.stdout
+loggers:
+        debugger:
+                level: DEBUG
+                handlers: [debugger_handler]
+                propagate: no
+        client_logger:
+                level: INFO
+                handlers: [client_basic_handler]
+        server_logger:
+                level: INFO
+                handlers: [server_basic_handler]
+        basic_logger:
+                level: INFO
+                handlers: [basic_handler]
+
+
