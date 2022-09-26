@@ -1,3 +1,4 @@
+from threading import Thread
 import socket
 import logging
 import sys
@@ -33,5 +34,13 @@ class Client(object):
 
 
 if __name__=='__main__':
-    my_client = Client()
-    my_client.connect("www.google.com", 80, "GET /robots.txt HTTP/1.1\r\n\r\n", timeout=10)
+    
+    # Example 1: Connect google
+    # my_client = Client()
+    # my_client.connect("www.google.com", 80, "GET /robots.txt HTTP/1.1\r\n\r\n", timeout=10)
+
+    # Example 2: Parallel connection to server
+    my_client_1 = Client()
+    my_client_2 = Client()
+    Thread(target=my_client_1.connect, args=("127.0.1.1", 14000, "Temporario 1"), kwargs={'timeout': 10}).start()
+    Thread(target=my_client_1.connect, args=("127.0.1.1", 14000, "Temporario 2"), kwargs={'timeout': 10}).start()
