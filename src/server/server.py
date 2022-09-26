@@ -27,13 +27,13 @@ class Server(object):
     def __init__(self):
         pass
 
-    def accept(self, host:str, server_port:int, dir:str, encoding='utf-8', timeout=None):
-        self.dir = dir
+    def accept(self, host:str, server_port:int, base_dir:str, encoding='utf-8', timeout=None):
+        extra = {'hostname': socket.gethostname(), 'ip': socket.gethostbyname(socket.gethostname()), 'dst_hostname':"", 'dst_port':0}
+        self.dir = base_dir
         self.encoding = encoding
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((host,server_port))
             s.listen() # Parameters could be an int32 with number of max connections, or nothing to do this automatically
-            extra = {'hostname': socket.gethostname(), 'ip': socket.gethostbyname(socket.gethostname())}
             s.settimeout(timeout)
             # server_logger.info("Connecting...", extra=extra)
             print (extra)
