@@ -1,9 +1,34 @@
+import re
+
+
+######Patterns######
+#Pattern for abs path:
+reserved = r";|/|\?|:|@|&|=|\+"
+safe     = r"\$|-|_|\."
+extra    = r"!|\*|'|\(|\)|,"
+escape   = r"%[a-fA-F0-9][a-fA-F0-9]"
+
+unreserved = f"[a-zA-Z]|[0-9]|({safe})|({extra})"
+uchar      = f"({unreserved})|({escape})"
+pchar      = f"({uchar})|:|@|&|=|\\+"
+fsegment   = f"({pchar})+"
+segment    = f"({pchar})*"
+param      = f"(({pchar})|/)*"
+params     = f"({param})(;({param}))*" 
+query      = f"(({uchar})|({reserved}))*"
+path       = f"({fsegment})(/({segment}))*"
+rel_path   = f"({path})?(;({params}))?(\\?({query}))?"
+abs_path   = f"/({rel_path})"
+
+#Pattern for method:
+method = "(GET)|(POST)"
+####################
 
 class HTTPResponse(object):
     def __init__(self, status_code):
         self.status_code = status_code
 
-    def encode(self):
+    def get_str_message(self):
         pass
 
     @staticmethod
@@ -13,16 +38,48 @@ class HTTPResponse(object):
 
 
 class HTTPRequest(object):
-    def __init__(self, URL, method):
-        self.URL = URL
-        self.method = method
+    def __init__(self, abs_path, method):
+        if is_abs_path(abs_path):
+            self.abs_path = abs_path 
+        else:
+            raise ValueError(f"{abs_path} is an invalid abs_path")
+        if is_method(method):
+            self.method   = method
+        else:
+            raise ValueError(f"{method} is not a valid method.")
 
-    def encode(self):
-        pass
+    def get_str_message(self):
+        return f"{self.method} {self.abs_path} HTTP/1.0\r\n\r\n"
 
     @staticmethod
     def parse(bytecode):
         pass
 
+def parse_url(url):
+    #todo
+    return ("hostname", 80, "/")
+
+
+def is_method(strn:str)->bool:
+    global method 
+    re_agent = re.compile("^" + method + "$")
+    return re_agent.match(strn) is not None
+
+def is_abs_path(strn:str)->bool:
+    global abs_path
+    re_agent = re.compile("^" + abs_path + "$")
+    return re_agent.match(strn) is not None
+
 if __name__ == "__main__":
+    valid_abs_path = '/123//;/d/;/?oi=10'
+    valid_abs_path2 = '/search/node/hello%20world'
+    r1 = HTTPRequest(valid_abs_path, 'GET')
+    r2 = HTTPRequest(valid_abs_path2, 'GET')
+    print(f"{r1.get_str_message()}")
+    print(f"{r2.get_str_message()}")
+
+
+
+
+
     

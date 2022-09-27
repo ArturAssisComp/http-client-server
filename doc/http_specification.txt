@@ -1,0 +1,86 @@
+This document specify the requirements for the implementation of HTTP/1.0:
+
+1 - Protocol Parameters:
+	1.1 - HTTP Version:
+		<major> = 1*DIGIT
+		<minor> = 1*DIGIT
+		HTTP-Version   = "HTTP" "/" <major> "." <minor>
+	HTTP/1.0 servers must:
+
+      	o recognize the format of the Request-Line for HTTP/0.9 and HTTP/1.0 requests;
+
+      	o understand any valid request in the format of HTTP/0.9 or HTTP/1.0;
+
+      	o respond appropriately with a message in the same protocol version used by the client.
+	
+  	 HTTP/1.0 clients must:
+
+      	o recognize the format of the Status-Line for HTTP/1.0 responses;
+
+      	o understand any valid response in the format of HTTP/0.9 or HTTP/1.0.
+
+	--> If the protocol version is not specified, the recipient must assume that the message is in the simple HTTP/0.9 format.
+
+	1.2 - http URL:
+       http_URL       = "http:" "//" host [ ":" port ] [ abs_path ]
+
+       host           = <A legal Internet host domain name
+                         or IP address (in dotted-decimal form),
+                         as defined by Section 2.1 of RFC 1123>
+
+       port           = *DIGIT
+
+       abs_path       = "/" rel_path
+       rel_path       = [ path ] [ ";" params ] [ "?" query ]
+
+       path           = fsegment *( "/" segment )
+       fsegment       = 1*pchar
+       segment        = *pchar
+
+       params         = param *( ";" param )
+       param          = *( pchar | "/" )
+
+       scheme         = 1*( ALPHA | DIGIT | "+" | "-" | "." )
+       net_loc        = *( pchar | ";" | "?" )
+       query          = *( uchar | reserved )
+       fragment       = *( uchar | reserved )
+
+       pchar          = uchar | ":" | "@" | "&" | "=" | "+"
+       uchar          = unreserved | escape
+       unreserved     = ALPHA | DIGIT | safe | extra | national
+
+       escape         = "%" HEX HEX
+       reserved       = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+"
+       extra          = "!" | "*" | "'" | "(" | ")" | ","
+       safe           = "$" | "-" | "_" | "."
+       unsafe         = CTL | SP | <"> | "#" | "%" | "<" | ">"
+       national       = <any OCTET excluding ALPHA, DIGIT,
+
+       --> The canonical form for "http" URLs is obtained by converting any UPALPHA characters in host to their LOALPHA equivalent 
+           (hostnames are case-insensitive), eliding the [ ":" port ] if the port is 80, and replacing an empty abs_path with "/".
+
+	1.3 - Date/time formats:
+
+       Sun, 06 Nov 1994 08:49:37 GMT    ; RFC 822, updated by RFC 1123
+       Sunday, 06-Nov-94 08:49:37 GMT   ; RFC 850, obsoleted by RFC 1036
+       Sun Nov  6 08:49:37 1994         ; ANSI C's asctime() format
+
+	--> HTTP/1.0 clients and servers that parse the date value should accept all three formats, though they must never generate the third (asctime) format.
+
+2 - Request:
+       Full-Request   = Request-Line             ; Section 5.1
+                        *( General-Header        ; Section 4.3
+                         | Request-Header        ; Section 5.2
+                         | Entity-Header )       ; Section 7.1
+                        CRLF
+                        [ Entity-Body ]          ; Section 7.2
+       Request-Line = Method SP Request-URI SP HTTP-Version CRLF
+       Method         = "GET"                    ; Section 8.1
+                      | "HEAD"                   ; Section 8.2
+                      | "POST"                   ; Section 8.3
+       Request-URI    = absoluteURI | abs_path
+       Request-Header = Authorization            ; Section 10.2
+                      | From                     ; Section 10.8
+                      | If-Modified-Since        ; Section 10.9
+                      | Referer                  ; Section 10.13
+                      | User-Agent               ; Section 10.15
