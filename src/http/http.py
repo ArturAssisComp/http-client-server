@@ -63,8 +63,15 @@ class HTTPRequest(object):
         pass
 
 def parse_url(url):
-    #todo
-    pass
+    global http_URL 
+    re_agent = re.compile("^" + http_URL + "$")
+    match = re_agent.match(url)
+    if match:
+        host     = match.group('host')
+        port     = match.group('port')
+        abs_path = match.group('abs_path')
+        return (host, port, abs_path)
+    return None, None, None
 
 
 
