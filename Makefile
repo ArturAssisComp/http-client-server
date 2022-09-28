@@ -12,6 +12,8 @@ VIRTUALENV = source $(INSTALLATION_DIR)/virt_env/Scripts/activate;
 PYTHON= $(VIRTUALENV) python
 PIP= $(VIRTUALENV) pip 
 
+NAMES=ArturAssisAlves_LucasInamine_LucasMaiaMorais
+
 
 downloaded_files: 
 	mkdir downloaded_files
@@ -35,4 +37,7 @@ install:
 
 uninstall:
 	rm -fr $(INSTALLATION_DIR)
+
+tar: clean uninstall
+	tar -cvf$(NAMES).tar.gz*
 
