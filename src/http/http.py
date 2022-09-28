@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 
 ######Patterns######
@@ -24,49 +25,85 @@ abs_path   = f"/({rel_path})"
 method = "(GET)|(POST)"
 
 #Pattern for URL:
-port = '[0-9]*'
-ipv4 = r"([0-9]{1,3}\.){3}([0-9]{1,3})"
+port     = '[0-9]*'
+ipv4     = r"([0-9]{1,3}\.){3}([0-9]{1,3})"
 hostname = r'((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}' #From: https://www.geeksforgeeks.org/how-to-validate-a-domain-name-using-regular-expression/
-host = f"({ipv4})|({hostname})"
+host     = f"({ipv4})|({hostname})"
 http_URL = f"http://(?P<host>({host}))(:(?P<port>{port}))?(?P<abs_path>{abs_path})?"
 
 #Pattern for headings:
-date = r'(?P<date>Date: )(?P<date_value>.*?)\r\n'
-pragma = r'(?P<pragma>Pragma: )(?P<pragma_value>.*?)\r\n'
+date           = r'(?P<date>Date: )(?P<date_value>.*?)\r\n'
+pragma         = r'(?P<pragma>Pragma: )(?P<pragma_value>.*?)\r\n'
 general_header = f"({date})|({pragma})"
 
-authorization = r'(?P<authorization>Authorization: )(?P<authorization_value>.*?)\r\n'
-from_ = r'(?P<from>From: )(?P<from_value>.*?)\r\n'
+authorization     = r'(?P<authorization>Authorization: )(?P<authorization_value>.*?)\r\n'
+from_             = r'(?P<from>From: )(?P<from_value>.*?)\r\n'
 if_modified_since = r'(?P<if_modified_since>If-Modified-Since: )(?P<if_modified_since_value>.*?)\r\n'
-referer = r'(?P<referer>Referer: )(?P<referer_value>.*?)\r\n'
-user_agent = r'(?P<user_agent>User-Agent: )(?P<user_agent_value>.*?)\r\n'
-request_header = f"({authorization})|({from_})|({if_modified_since})|({referer})|({user_agent})"
+referer           = r'(?P<referer>Referer: )(?P<referer_value>.*?)\r\n'
+user_agent        = r'(?P<user_agent>User-Agent: )(?P<user_agent_value>.*?)\r\n'
+request_header    = f"({authorization})|({from_})|({if_modified_since})|({referer})|({user_agent})"
 
 
-allow = r'(?P<allow>Allow: )(?P<allow_value>.*?)\r\n'
+allow            = r'(?P<allow>Allow: )(?P<allow_value>.*?)\r\n'
 content_encoding = r'(?P<content_encoding>Content-Encoding: )(?P<content_encoding_value>.*?)\r\n'
-content_length = r'(?P<content_length>Content-Length: )(?P<content_length_value>[0-9]+)\r\n'
-content_type = r'(?P<content_type>Content-Type: )(?P<content_type_value>.*?)\r\n'
-expires = r'(?P<expires>Expires: )(?P<expires_value>.*?)\r\n'
-last_modified = r'(?P<last_modified>Last-Modified: )(?P<last_modified_value>.*?)\r\n'
-entity_header  = f"({allow})|({content_encoding})|({content_length})|({content_type})|({expires})|({last_modified})"
+content_length   = r'(?P<content_length>Content-Length: )(?P<content_length_value>[0-9]+)\r\n'
+content_type     = r'(?P<content_type>Content-Type: )(?P<content_type_value>.*?)\r\n'
+expires          = r'(?P<expires>Expires: )(?P<expires_value>.*?)\r\n'
+last_modified    = r'(?P<last_modified>Last-Modified: )(?P<last_modified_value>.*?)\r\n'
+entity_header    = f"({allow})|({content_encoding})|({content_length})|({content_type})|({expires})|({last_modified})"
 
 #Entity body
 entity_body = r'(?P<entity_body>(.|\n)*)'
 
 #Pattern for requests:
-request_line = f"(?P<method>(GET)|(HEAD)|(POST)) (?P<abs_path>{abs_path}) HTTP/(?P<major>[0-9]+)\\.(?P<minor>[0-9]+)\\r\\n"
-full_request = f"({request_line})(({general_header})|({request_header})|({entity_header}))*\\r\\n({entity_body})?"
+request_line   = f"(?P<method>(GET)|(HEAD)|(POST)) (?P<abs_path>{abs_path}) HTTP/(?P<major>[0-9]+)\\.(?P<minor>[0-9]+)\\r\\n"
+full_request   = f"({request_line})(({general_header})|({request_header})|({entity_header}))*\\r\\n({entity_body})?"
 simple_request = f"(?P<method>GET) (?P<abs_path>{abs_path})\\r\\n"
 
 ####################
 
 class HTTPResponse(object):
-    def __init__(self, status_code):
+    def __init__(self, status_code, reason_phrase=None, entity_body=None, major=1, minor=0, headers=None):
+        if not isinstance(status_code, int):
+            raise TypeError("status code must be ant int")
+        if status_code not in {200, 201, 202, 204, 301, 302, 304, 400, 401, 403, 404, 500, 501, 502, 503}:
+            raise ValueError(f"Invalid status code {status_code}")
         self.status_code = status_code
+        reason_phrase_dict = {
+                    200:"OK",
+                    201:"Created",
+                    202:"Accepted",
+                    204:"No Content",
+                    301:"Moved Permanently",
+                    302:"Moved Temporarily",
+                    304:"Not Modified",
+                    400:"Bad Request",
+                    401:"Unauthorized",
+                    403:"Forbidden",
+                    404:"Not Found",
+                    500:"Internal Server Error",
+                    501:"Not Implemented",
+                    502:"Bad Gateway",
+                    503:"Service Unavailable"}
+        if reason_phrase is None:
+            reason_phrase = reason_phrase_dict[status_code]
+        self.reason_phrase = reason_phrase
+        self.entity_body = entity_body
+        self.major=major
+        self.minor=minor
+        if headers is None:
+            headers = dict()
+        self.headers = headers
 
     def get_str_message(self):
-        pass
+        header_str_builder = []
+        for name, value in self.headers.items():
+            header_str_builder.append(f"{name}: {value}\r\n")
+        response = f'HTTP/{self.major}.{self.minor} {self.status_code} {self.reason_phrase}\r\n{"".join(header_str_builder)}\r\n{self.entity_body}'
+        return response
+
+
+
 
     @staticmethod
     def parse(bytecode, encoding='utf-8'):
@@ -198,32 +235,40 @@ if __name__ == "__main__":
     
     #print(parse_url("http://www.ita.br/search/node/teste%20oi"))
 
-    request1 = "GET /\r\n"
-    print(f"Parsing for {request1 = }\n{HTTPRequest.parse(request1.encode())}")
-    request1 = "GET /test/123.txt\r\n"
-    print(f"Parsing for {request1 = }\n{HTTPRequest.parse(request1.encode())}")
-    request2 = "GET/\r\n"
-    print(f"Parsing for {request2 = }\n{HTTPRequest.parse(request2.encode())}")
-    request3 = "GET /teste/oi.pdf HTTP/1.0\r\n"\
-               "\r\n"\
-               """Content 
-               Hello World!
-               Bye Bye:!!!$%#
-               """
-    print(f"Parsing for {request3 = }\n{HTTPRequest.parse(request3.encode())}")
-    request4 = "GET /teste/oi.pdf HTTP/1.0\r\n"\
-               "Date: 12/02/1990\r\n"\
-               "Content-Length: 2045\r\n"\
-               "Pragma: hello-world\r\n"\
-               "\r\n"\
-               """Content 
-               Hello World!
-               Bye Bye:!!!$%#
-               """
-    print(f"Parsing for {request4 = }\n{HTTPRequest.parse(request4.encode())}")
+    #request1 = "GET /\r\n"
+    #print(f"Parsing for {request1 = }\n{HTTPRequest.parse(request1.encode())}")
+    #request1 = "GET /test/123.txt\r\n"
+    #print(f"Parsing for {request1 = }\n{HTTPRequest.parse(request1.encode())}")
+    #request2 = "GET/\r\n"
+    #print(f"Parsing for {request2 = }\n{HTTPRequest.parse(request2.encode())}")
+    #request3 = "GET /teste/oi.pdf HTTP/1.0\r\n"\
+    #           "\r\n"\
+    #           """Content 
+    #           Hello World!
+    #           Bye Bye:!!!$%#
+    #           """
+    #print(f"Parsing for {request3 = }\n{HTTPRequest.parse(request3.encode())}")
+    #request4 = "GET /teste/oi.pdf HTTP/1.0\r\n"\
+    #           "Date: 12/02/1990\r\n"\
+    #           "Content-Length: 2045\r\n"\
+    #           "Pragma: hello-world\r\n"\
+    #           "\r\n"\
+    #           """Content 
+    #           Hello World!
+    #           Bye Bye:!!!$%#
+    #           """
+    #print(f"Parsing for {request4 = }\n{HTTPRequest.parse(request4.encode())}")
 
-    request5 = "GET /oi/teste HTTP/1.0\r\nPragma: teste\r\nAuthorization: auth\r\nDate: \r\n\r\n"
-    print(f"Parsing for {request5 = }\n{HTTPRequest.parse(request5.encode())}")
+    #request5 = "GET /oi/teste HTTP/1.0\r\nPragma: teste\r\nAuthorization: auth\r\nDate: \r\n\r\n"
+    #print(f"Parsing for {request5 = }\n{HTTPRequest.parse(request5.encode())}")
+
+    entity_body = "Hello World!\n<body><h>\n"
+    headers = {
+            "Date":f'{datetime.today().strftime("%a, %d %b %Y %H:%M:%S %Z")}',
+            "Content-Type":f"text/html; charset=utf-8",
+            "Content-Length":len(entity_body)}
+    print(f'{HTTPResponse(200, entity_body=entity_body, headers=headers).get_str_message() = }')
+
 
     
 
