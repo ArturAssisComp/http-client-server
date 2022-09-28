@@ -52,6 +52,10 @@ expires          = r'(?P<expires>Expires: )(?P<expires_value>.*?)\r\n'
 last_modified    = r'(?P<last_modified>Last-Modified: )(?P<last_modified_value>.*?)\r\n'
 entity_header    = f"({allow})|({content_encoding})|({content_length})|({content_type})|({expires})|({last_modified})"
 
+location = r'(?P<location>Location: )(?P<location_value>.*?)\r\n'
+server = r'(?P<server>Server: )(?P<server_value>.*?)\r\n'
+www_authenticate = r'(?P<www_authenticate>WWW-Authenticate: )(?P<www_authenticate_value>.*?)\r\n'
+response_header = f"({location})|({server})|({www_authenticate})"
 #Entity body
 entity_body = r'(?P<entity_body>(.|\n)*)'
 
@@ -59,6 +63,11 @@ entity_body = r'(?P<entity_body>(.|\n)*)'
 request_line   = f"(?P<method>(GET)|(HEAD)|(POST)) (?P<abs_path>{abs_path}) HTTP/(?P<major>[0-9]+)\\.(?P<minor>[0-9]+)\\r\\n"
 full_request   = f"({request_line})(({general_header})|({request_header})|({entity_header}))*\\r\\n({entity_body})?"
 simple_request = f"(?P<method>GET) (?P<abs_path>{abs_path})\\r\\n"
+
+#Pattern for response:
+status_line = r'HTTP/(?P<major>[0-9]+)\.(?P<minor>[0-9]+) (?P<status_code>[0-9]{3}) (?P<reason_phrase>[A-Za-z]+[a-zA-Z ]*)\r\n'
+full_response = f"({status_line})(({general_header})|({response_header})|({entity_header}))*\\r\\n({entity_body})?"
+
 
 ####################
 
@@ -105,9 +114,62 @@ class HTTPResponse(object):
 
 
 
+
     @staticmethod
     def parse(bytecode, encoding='utf-8'):
-        pass
+        global full_response
+        response_str = bytecode.decode(encoding=encoding)
+        # Try to parse full response:
+        re_full_response = re.compile("^" + full_response)
+        match = re_full_response.match(response_str)
+        if match:
+            status_code = match.group('status_code')
+            reason_phrase = match.group('reason_phrase')
+            major = match.group('major')
+            minor = match.group('minor')
+            #Get headers:
+            headers = dict()
+            date = match.group('date')
+            if date:
+                headers['date'] = match.group('date_value')
+            pragma = match.group('pragma')
+            if pragma:
+                headers['pragma'] = match.group('pragma_value')
+            location = match.group('location')
+            if location:
+                headers['location'] = match.group('location_value')
+            server = match.group('server')
+            if server:
+                headers['server'] = match.group('server_value')
+            www_authenticate = match.group('www_authenticate')
+            if www_authenticate:
+                headers['www_authenticate'] = match.group('www_authenticate_value')
+            allow = match.group('allow')
+            if allow:
+                headers['allow'] = match.group('allow_value')
+            content_encoding = match.group('content_encoding')
+            if content_encoding:
+                headers['content_encoding'] = match.group('content_encoding_value')
+            content_length = match.group('content_length')
+            if content_length:
+                headers['content_length'] = match.group('content_length_value')
+            content_type = match.group('content_type')
+            if content_type:
+                headers['content_type'] = match.group('content_type_value')
+            expires = match.group('expires')
+            if expires:
+                headers['expires'] = match.group('expires_value')
+            last_modified = match.group('last_modified')
+            if last_modified:
+                headers['last_modified'] = match.group('last_modified_value')
+
+            #Get the entity body:
+            entity_body = match.group("entity_body")
+            if entity_body is None:
+                entity_body = ""
+            return {'status_code':status_code, 'reason_phrase':reason_phrase, 'major':major, 'minor':minor, 'headers':headers, 'entity_body':entity_body}
+        return None
+
 
 
 
@@ -267,7 +329,9 @@ if __name__ == "__main__":
             "Date":f'{datetime.today().strftime("%a, %d %b %Y %H:%M:%S %Z")}',
             "Content-Type":f"text/html; charset=utf-8",
             "Content-Length":len(entity_body)}
-    print(f'{HTTPResponse(200, entity_body=entity_body, headers=headers).get_str_message() = }')
+    response = HTTPResponse(301, entity_body=entity_body, headers=headers).get_str_message()
+    print(f'{response}')
+    print(f'\n{HTTPResponse.parse(response.encode())}')
 
 
     

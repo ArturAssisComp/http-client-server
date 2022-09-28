@@ -169,3 +169,11 @@ This document specify the requirements for the implementation of HTTP/1.0:
 
 
        Entity-Body    = *OCTET
+
+4 - Response:
+       Response-Header = Location                ; Section 10.11
+                       | Server                  ; Section 10.14
+                       | WWW-Authenticate        ; Section 10.16
+       Location       = "Location" ":" absoluteURI
+       Server         = "Server" ":" 1*( product | comment )
+       WWW-Authenticate = "WWW-Authenticate" ":" 1#challenge
