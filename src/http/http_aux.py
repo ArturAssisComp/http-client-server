@@ -27,7 +27,7 @@ method = "(GET)|(POST)"
 #Pattern for URL:
 port     = '[0-9]*'
 ipv4     = r"([0-9]{1,3}\.){3}([0-9]{1,3})"
-hostname = r'((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}' #From: https://www.geeksforgeeks.org/how-to-validate-a-domain-name-using-regular-expression/
+hostname = r'(((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6})|(((?!-)[A-Za-z0-9-]{1,63}(?<!-)))' #From: https://www.geeksforgeeks.org/how-to-validate-a-domain-name-using-regular-expression/
 host     = f"({ipv4})|({hostname})"
 http_URL = f"http://(?P<host>({host}))(:(?P<port>{port}))?(?P<abs_path>{abs_path})?"
 
@@ -50,7 +50,7 @@ content_length   = r'(?P<content_length>Content-Length: )(?P<content_length_valu
 content_type     = r'(?P<content_type>Content-Type: )(?P<content_type_value>.*?)\r\n'
 expires          = r'(?P<expires>Expires: )(?P<expires_value>.*?)\r\n'
 last_modified    = r'(?P<last_modified>Last-Modified: )(?P<last_modified_value>.*?)\r\n'
-entity_header    = f"({allow})|({content_encoding})|({content_length})|({content_type})|({expires})|({last_modified})"
+entity_header    = f"({allow})|({content_encoding})|({content_length})|({content_type})|({expires})|({last_modified})|(.*?: .*?\\r\\n)"
 
 location = r'(?P<location>Location: )(?P<location_value>.*?)\r\n'
 server = r'(?P<server>Server: )(?P<server_value>.*?)\r\n'
@@ -97,6 +97,8 @@ class HTTPResponse(object):
         if reason_phrase is None:
             reason_phrase = reason_phrase_dict[status_code]
         self.reason_phrase = reason_phrase
+        if entity_body is None:
+            entity_body = ""
         self.entity_body = entity_body
         self.major=major
         self.minor=minor

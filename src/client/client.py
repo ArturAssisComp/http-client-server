@@ -8,7 +8,12 @@ script_dir    = os.path.dirname(__file__)
 rel_path      = ".."
 abs_file_path = os.path.join(script_dir, rel_path)
 sys.path.append(abs_file_path)
+rel_path      = "../http"
+abs_file_path = os.path.join(script_dir, rel_path)
+sys.path.append(abs_file_path)
 import logger_config
+import http_aux as http
+
 
 
 BUFFER_SIZE = 2048
@@ -30,21 +35,58 @@ class Client(object):
             client_logger.info(f"Waiting for response...", extra=extra)
             data = s.recv(BUFFER_SIZE)
         client_logger.info(f"Received:\n/***response***/\n{repr(data)}\n/**************/", extra=extra)
+        return data
 
 
 
 if __name__=='__main__':
+    if len(sys.argv) <= 1:
+        raise RuntimeError(f"Usage: {sys.argv[0]} [url1] [url2] ... [urln]")
+    client = Client()
+    for arg in sys.argv[1:]:
+        basic_logger.info(f"Reading url: {arg}")
+        host, port, abs_path = http.parse_url(arg)
+        if host is None:
+            basic_logger.error("Invalid url")
+            continue
+        if port is None:
+            port = 80
+        if abs_path is None:
+            abs_path = '/'
+        basic_logger.info(f'{host = }, {port = }, {abs_path = }')
+
+        #Build the request:
+        request = http.HTTPRequest(abs_path, 'GET').get_str_message()
+
+        #Establish connection:
+        data = client.connect(host, int(port), request, timeout=15)
+        parsed_response = http.HTTPResponse.parse(data)
+        if parsed_response is None:
+            basic_logger.error("Invalid response")
+            continue
+
+        status_code = parsed_response['status_code']
+        reason_phrase = parsed_response['reason_phrase']
+        entity_body = parsed_response['entity_body']
+        
+        basic_logger.info(f"Reading response:")
+        basic_logger.info(f"{status_code = }, {reason_phrase}")
+        if status_code == '200' and len(entity_body) > 0:
+            file_size = int(parsed_response['headers'].get('content_length', -1))
+            if abs_path == '/':
+                filename = 'index.html'
+            else:
+                filename = abs_path.split('/')[-1]
+            received_file = entity_body.encode()[:file_size]
+            basic_logger.info(f"Saving file {filename}")
+            with open(filename, "wb") as f:
+                f.write(received_file)
+            basic_logger.info(f"Saved")
+
+
+
+
+
+
+
     
-    # Example 1: Connect google
-    # my_client = Client()
-    # my_client.connect("www.google.com", 80, "GET /robots.txt HTTP/1.1\r\n\r\n", timeout=10)
-
-    # Example 2: Parallel connection to server
-    # my_client_1 = Client()
-    # my_client_2 = Client()
-    # Thread(target=my_client_1.connect, args=("127.0.1.1", 14000, "Temporario 1"), kwargs={'timeout': 10}).start()
-    # Thread(target=my_client_1.connect, args=("127.0.1.1", 14000, "Temporario 2"), kwargs={'timeout': 10}).start()
-
-    # Example 3: Connect localhost
-    my_client = Client()
-    my_client.connect("localhost", 14000, "GET /robots.txt HTTP/1.1\r\n\r\n", timeout=10)
