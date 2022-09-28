@@ -1,5 +1,20 @@
 This document specify the requirements for the implementation of HTTP/1.0:
 
+0 - Basics:
+       word           = token | quoted-string
+       token          = 1*<any CHAR except CTLs or tspecials>
+       tspecials      = "(" | ")" | "<" | ">" | "@"
+                      | "," | ";" | ":" | "\" | <">
+                      | "/" | "[" | "]" | "?" | "="
+                      | "{" | "}" | SP | HT
+     Comments may be included in some HTTP header fields by surrounding the comment text with parentheses. Comments are only allowed in fields containing "comment" as part of their field value definition. In all other fields, parentheses are considered part of the field value.
+       comment        = "(" *( ctext | comment ) ")"
+       ctext          = <any TEXT excluding "(" and ")">
+     A string of text is parsed as a single word if it is quoted using double-quote marks.
+       quoted-string  = ( <"> *(qdtext) <"> )
+       qdtext         = <any CHAR except <"> and CTLs,
+                        but including LWS>
+
 1 - Protocol Parameters:
 	1.1 - HTTP Version:
 		<major> = 1*DIGIT
@@ -20,6 +35,7 @@ This document specify the requirements for the implementation of HTTP/1.0:
       	o understand any valid response in the format of HTTP/0.9 or HTTP/1.0.
 
 	--> If the protocol version is not specified, the recipient must assume that the message is in the simple HTTP/0.9 format.
+
 
 	1.2 - http URL:
        http_URL       = "http:" "//" host [ ":" port ] [ abs_path ]
@@ -66,21 +82,90 @@ This document specify the requirements for the implementation of HTTP/1.0:
        Sun Nov  6 08:49:37 1994         ; ANSI C's asctime() format
 
 	--> HTTP/1.0 clients and servers that parse the date value should accept all three formats, though they must never generate the third (asctime) format.
+       HTTP-date      = rfc1123-date | rfc850-date | asctime-date
+       rfc1123-date   = wkday "," SP date1 SP time SP "GMT"
+       rfc850-date    = weekday "," SP date2 SP time SP "GMT"
+       asctime-date   = wkday SP date3 SP time SP 4DIGIT
+       date1          = 2DIGIT SP month SP 4DIGIT
+                        ; day month year (e.g., 02 Jun 1982)
+       date2          = 2DIGIT "-" month "-" 2DIGIT
+                        ; day-month-year (e.g., 02-Jun-82)
+       date3          = month SP ( 2DIGIT | ( SP 1DIGIT ))
+                        ; month day (e.g., Jun  2)
+       time           = 2DIGIT ":" 2DIGIT ":" 2DIGIT
+                        ; 00:00:00 - 23:59:59
+       wkday          = "Mon" | "Tue" | "Wed"
+                      | "Thu" | "Fri" | "Sat" | "Sun"
+       weekday        = "Monday" | "Tuesday" | "Wednesday"
+                      | "Thursday" | "Friday" | "Saturday" | "Sunday"
+       month          = "Jan" | "Feb" | "Mar" | "Apr"
+                      | "May" | "Jun" | "Jul" | "Aug"
+                      | "Sep" | "Oct" | "Nov" | "Dec"
 
-2 - Request:
+
+2 - Message headers:
+       HTTP header fields, which include General-Header (Section 4.3), Request-Header (Section 5.2), Response-Header (Section 6.2), 
+       and Entity-Header (Section 7.1) fields, follow the same generic format as that given in Section 3.1 of RFC 822 [7]. Each 
+       header field consists of a name followed immediately by a colon (":"), a single space (SP) character, and the field value. 
+       Field names are case-insensitive. Header fields can be extended over multiple lines by preceding each extra line with at least 
+       one SP or HT, though this is not recommended.
+       
+       HTTP-header    = field-name ":" [ field-value ] CRLF
+       field-name     = token
+       field-value    = *( field-content | LWS )
+       field-content  = <the OCTETs making up the field-value
+                        and consisting of either *TEXT or combinations
+                        of token, tspecials, and quoted-string>
+
+3 - Request:
        Full-Request   = Request-Line             ; Section 5.1
                         *( General-Header        ; Section 4.3
                          | Request-Header        ; Section 5.2
                          | Entity-Header )       ; Section 7.1
                         CRLF
                         [ Entity-Body ]          ; Section 7.2
+
+
        Request-Line = Method SP Request-URI SP HTTP-Version CRLF
        Method         = "GET"                    ; Section 8.1
                       | "HEAD"                   ; Section 8.2
                       | "POST"                   ; Section 8.3
        Request-URI    = absoluteURI | abs_path
+
+       General-Header = Date                     ; Section 10.6
+                      | Pragma                   ; Section 10.12 --> not implemented
+       Date           = "Date" ":" HTTP-date
+       Pragma           = "Pragma" ":" 1#pragma-directive
+
+
        Request-Header = Authorization            ; Section 10.2
                       | From                     ; Section 10.8
                       | If-Modified-Since        ; Section 10.9
                       | Referer                  ; Section 10.13
                       | User-Agent               ; Section 10.15
+       Authorization  = "Authorization" ":" credentials
+       From           = "From" ":" mailbox
+       If-Modified-Since = "If-Modified-Since" ":" HTTP-date
+       Referer        = "Referer" ":" ( absoluteURI | relativeURI )
+       User-Agent     = "User-Agent" ":" 1*( product | comment )
+
+
+
+
+       Entity-Header  = Allow                    ; Section 10.1
+                      | Content-Encoding         ; Section 10.3
+                      | Content-Length           ; Section 10.4
+                      | Content-Type             ; Section 10.5
+                      | Expires                  ; Section 10.7
+                      | Last-Modified            ; Section 10.10
+                      | extension-header
+       extension-header = HTTP-header
+       Allow          = "Allow" ":" 1#method
+       Content-Encoding = "Content-Encoding" ":" content-coding
+       Content-Length = "Content-Length" ":" 1*DIGIT
+       Content-Type   = "Content-Type" ":" media-type
+       Expires        = "Expires" ":" HTTP-date
+       Last-Modified  = "Last-Modified" ":" HTTP-date
+
+
+       Entity-Body    = *OCTET
