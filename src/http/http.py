@@ -25,10 +25,10 @@ method = "(GET)|(POST)"
 
 #Pattern for URL:
 port = '[0-9]*'
-ipv4 = r"([0-9]{1, 3}\.){3}([0-9]{1, 3})"
-hostname = r'((?!-)[A-Za-z0-9-]{1, 63}(?<!-)\.)+[A-Za-z]{2, 6}' #From: https://www.geeksforgeeks.org/how-to-validate-a-domain-name-using-regular-expression/
-host = f"(ipv4)|(hostname)"
-http_URL = f"http://(?P<host>{host})(:(?P<port>{port}))?(?P<abs_path>{abs_path})?"
+ipv4 = r"([0-9]{1,3}\.){3}([0-9]{1,3})"
+hostname = r'((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}' #From: https://www.geeksforgeeks.org/how-to-validate-a-domain-name-using-regular-expression/
+host = f"({ipv4})|({hostname})"
+http_URL = f"http://(?P<host>({host}))(:(?P<port>{port}))?(?P<abs_path>{abs_path})?"
 ####################
 
 class HTTPResponse(object):
@@ -64,7 +64,9 @@ class HTTPRequest(object):
 
 def parse_url(url):
     #todo
-    return ("hostname", 80, "/")
+    pass
+
+
 
 
 def is_method(strn:str)->bool:
@@ -84,6 +86,9 @@ if __name__ == "__main__":
     r2 = HTTPRequest(valid_abs_path2, 'GET')
     print(f"{r1.get_str_message()}")
     print(f"{r2.get_str_message()}")
+
+    
+    #print(parse_url("http://www.ita.br/search/node/teste%20oi"))
 
 
 
