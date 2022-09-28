@@ -22,6 +22,13 @@ abs_path   = f"/({rel_path})"
 
 #Pattern for method:
 method = "(GET)|(POST)"
+
+#Pattern for URL:
+port = '[0-9]*'
+ipv4 = r"([0-9]{1, 3}\.){3}([0-9]{1, 3})"
+hostname = r'((?!-)[A-Za-z0-9-]{1, 63}(?<!-)\.)+[A-Za-z]{2, 6}' #From: https://www.geeksforgeeks.org/how-to-validate-a-domain-name-using-regular-expression/
+host = f"(ipv4)|(hostname)"
+http_URL = f"http://(?P<host>{host})(:(?P<port>{port}))?(?P<abs_path>{abs_path})?"
 ####################
 
 class HTTPResponse(object):
